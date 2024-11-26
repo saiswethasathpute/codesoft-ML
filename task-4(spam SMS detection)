@@ -1,0 +1,66 @@
+#codesoftML
+#task-4
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, roc_auc_score
+
+
+data = pd.read_csv('spam_sms.csv')  # Change the path to your file
+
+
+print(data.head())
+
+
+
+data['message'] = data['message'].str.replace(r'[^a-zA-Z\s]', '', regex=True)
+
+
+X = data['message']  # Text data
+y = data['label']    # Target variable (1 for spam, 0 for ham)
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+tfidf = TfidfVectorizer(stop_words='english', max_features=5000)  # Use top 5000 features
+X_train_tfidf = tfidf.fit_transform(X_train)
+X_test_tfidf = tfidf.transform(X_test)
+
+
+nb_model = MultinomialNB()
+nb_model.fit(X_train_tfidf, y_train)
+
+# Logistic Regression
+log_reg_model = LogisticRegression()
+log_reg_model.fit(X_train_tfidf, y_train)
+
+
+svm_model = SVC(probability=True)  # Set probability=True for ROC-AUC calculation
+svm_model.fit(X_train_tfidf, y_train)
+
+
+y_pred_nb = nb_model.predict(X_test_tfidf)
+y_pred_lr = log_reg_model.predict(X_test_tfidf)
+y_pred_svm = svm_model.predict(X_test_tfidf)
+
+
+print("Naive Bayes Classification Report:")
+print(classification_report(y_test, y_pred_nb))
+print("Naive Bayes Accuracy:", accuracy_score(y_test, y_pred_nb))
+print("Naive Bayes ROC-AUC:", roc_auc_score(y_test, nb_model.predict_proba(X_test_tfidf)[:, 1]))
+
+
+print("\nLogistic Regression Classification Report:")
+print(classification_report(y_test, y_pred_lr))
+print("Logistic Regression Accuracy:", accuracy_score(y_test, y_pred_lr))
+print("Logistic Regression ROC-AUC:", roc_auc_score(y_test, log_reg_model.predict_proba(X_test_tfidf)[:, 1]))
+
+
+print("\nSupport Vector Machine Classification Report:")
+print(classification_report(y_test, y_pred_svm))
+print("SVM Accuracy:", accuracy_score(y_test, y_pred_svm))
+print("SVM ROC-AUC:", roc_auc_score(y_test, svm_model.predict_proba(X_test_tfidf)[:, 1]))
